@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: producer-handler-exceptions-web-kafka #no tiene na de web jaja
+  main:
+    banner-mode: off
+    log-startup-info: false
+  jackson:
+    date-format: yyyy-MM-dd

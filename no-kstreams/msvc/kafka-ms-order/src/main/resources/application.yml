@@ -1,0 +1,61 @@
+logging:
+  pattern:
+    console: "[Kafka Order] %clr(%d{HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:%5p}) %clr(---){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
+spring:
+  application:
+    name: kafka-ms-order
+  main:
+    banner-mode: off
+    log-startup-info: false
+  h2:
+    console:
+      enabled: true
+  datasource:
+    url: jdbc:h2:mem:kafkaorderdb
+  kafka:
+    #delivery.timeout.ms >= linger.ms + retry.backoff.ms (multiple times) + request.timeout.ms
+    #max.block.ms -> tiempo de espera para la obtención de metadatos y la asignación de buffers
+    #linger.ms -> tiempo de espera para permitir que otros registros sean enviados
+    #retry.backoff.ms -> tiempo de espera antes de reintentar enviar la petición fallida
+    #request.timeout.ms -> tiempo de espera del broker de Kafka para la respuesta
+    #delivery.timeout.ms -> tiempo de espera de Kafka para la entrega de un mensaje al broker, antes de considerarlo un fracaso
+    listener:
+      missing-topics-fatal: false
+    producer:
+      bootstrap-servers:
+        - localhost:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      compression-type: snappy
+      batch-size: 32768
+    consumer:
+      group-id: kafka-order-cg
+      enable-auto-commit: true
+      auto-offset-reset: earliest
+      bootstrap-servers:
+        - localhost:9092
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: com.pycampadb.msvc.broker.message
+            value:
+              default:
+                type: java.lang.Object
+    properties:
+      request:
+        timeout:
+          ms: 10000
+      delivery:
+        timeout:
+          ms: 30000
+      enable:
+        idempotence: true
+      linger:
+        ms: 15000
+
+
+server:
+  port: 9001

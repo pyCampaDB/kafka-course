@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: consumer-handler-exceptions-web-kafka
+  main:
+    banner-mode: off
+    log-startup-info: false
+  kafka:
+    listener:
+      ack-mode: record
+    consumer:
+      group-id: kafka-consumer-group #se anula por defecto al definirla en el KafkaListener
+      auto-offset-reset: earliest
+      max-poll-records: 10
+  #      properties:
+  #        partition:
+  #          assignment:
+  #            strategy: org.apache.kafka.clients.consumer.RoundRobinAssignor
+  jackson:
+    date-format: yyyy-MM-dd
+server:
+  port: 0
+
