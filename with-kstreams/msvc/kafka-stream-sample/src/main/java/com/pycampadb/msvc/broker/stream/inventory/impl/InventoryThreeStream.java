@@ -8,9 +8,8 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.support.serializer.JsonSerde;
-import org.springframework.stereotype.Component;
 
-@Component
+//@Component
 public class InventoryThreeStream implements InventoryStream {
     private static final String INPUT_TOPIC = "t-commodity-inventory";
     private static final String OUTPUT_TOPIC = "t-commodity-inventory-total-three";
