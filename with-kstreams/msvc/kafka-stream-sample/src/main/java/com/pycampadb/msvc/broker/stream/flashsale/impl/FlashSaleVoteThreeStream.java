@@ -8,11 +8,10 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.support.serializer.JsonSerde;
-import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 
-@Component
+//@Component ahora toca los FeedbackRating
 public class FlashSaleVoteThreeStream implements FlashSaleVoteStream {
     private static final String INPUT_TOPIC = "t-commodity-flashsale-vote";
     private static final String OUTPUT_TOPIC = "t-commodity-flashsale-vote-three-user-item";

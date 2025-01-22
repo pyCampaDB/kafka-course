@@ -34,7 +34,7 @@ public class FeedbackFourStream implements FeedbackStream {
                                 ks -> {
                                     ks.to("t-commodity-feedback-four-good");
                                     ks.groupByKey() //KGroupedStream
-                                            .count().
+                                            .count(). //KTable
                                             toStream().
                                             to("t-commodity-feedback-four-good-count");
                                 }

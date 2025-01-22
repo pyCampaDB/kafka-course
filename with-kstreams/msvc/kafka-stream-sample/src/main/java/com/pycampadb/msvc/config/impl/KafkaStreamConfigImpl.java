@@ -23,10 +23,11 @@ public class KafkaStreamConfigImpl implements KafkaStreamConfig {
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-
+        props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, "3000");
+        //props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, "exactly_once_v2") //Al escribir esta línea se produce un error de conexión
         return new KafkaStreamsConfiguration(props);
         //están escritos los mismos valores que en application.yml,
         // son dos formas distintas de hacerlo, nos quedaríamos con una de ellas
-        // en este caso, voy a dejar las dos para ver constancia de ambas
+        // me toma únicamente lo escrito aquí
     }
 }

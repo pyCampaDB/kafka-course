@@ -28,13 +28,13 @@ spring:
       bootstrap-servers:
         - localhost:9092
       properties:
-        default:
-          key:
-            serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-          value:
-            serde: org.apache.kafka.common.serialization.Serdes$StringSerde
         commit:
           interval:
             ms: 3000 #predeterminada 30 seg, al utilizar KTable, el intervalo entre la entrega de datos al KTable y su salida
         processing:
           guarantee: exactly_once_v2
+        default:
+          key:
+            serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+          value:
+            serde: org.apache.kafka.common.serialization.Serdes$StringSerde
