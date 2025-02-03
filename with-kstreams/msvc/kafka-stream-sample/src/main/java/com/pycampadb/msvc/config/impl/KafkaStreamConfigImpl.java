@@ -1,6 +1,7 @@
 package com.pycampadb.msvc.config.impl;
 
 import com.pycampadb.msvc.config.KafkaStreamConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
 import org.springframework.context.annotation.Bean;
@@ -24,7 +25,8 @@ public class KafkaStreamConfigImpl implements KafkaStreamConfig {
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
         props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, "3000");
-        //props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, "exactly_once_v2") //Al escribir esta línea se produce un error de conexión
+        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        //props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2) //Al escribir esta línea se produce un error de conexión
         return new KafkaStreamsConfiguration(props);
         //están escritos los mismos valores que en application.yml,
         // son dos formas distintas de hacerlo, nos quedaríamos con una de ellas

@@ -1,0 +1,97 @@
+DROP TABLE IF EXISTS `tbl-commodity-flashsale-vote-two-result`;
+
+DROP TABLE IF EXISTS `tbl-commodity-flashsale-vote-user-item-timestamp`;
+DROP TABLE IF EXISTS `tbl-commodity-flashsale-vote-one-result`;
+
+DROP TABLE IF EXISTS `tbl-commodity-flashsale-vote-user-item`;
+
+
+DROP STREAM IF EXISTS `s-commodity-flashsale-vote`;
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE STREAM `s-commodity-flashsale-vote` (
+    `customerId` VARCHAR,
+    `itemName` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-commodity-flashsale-vote',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE TABLE `tbl-commodity-flashsale-vote-user-item` 
+    AS SELECT
+        `customerId`, LATEST_BY_OFFSET(`itemName`) as `itemName`
+    FROM `s-commodity-flashsale-vote`
+    GROUP BY `customerId`; 
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE TABLE `tbl-commodity-flashsale-vote-one-result`
+AS
+    SELECT
+        `itemName`,
+        COUNT (`customerId`) AS `votesCount`
+    FROM `tbl-commodity-flashsale-vote-user-item`
+    GROUP BY `itemName`
+    EMIT CHANGES;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE TABLE `tbl-commodity-flashsale-vote-user-item-timestamp`
+AS
+    SELECT `customerId`,
+        LATEST_BY_OFFSET(`itemName`) AS `itemName`
+    FROM `s-commodity-flashsale-vote`
+    WHERE rowtime >= '2025-01-30T10:00:00' -- ajustar la franja horaria (rowtime es el momento en el el momento en el que se inserta el registro)
+        AND rowtime < '2025-01-30T13:00:00'
+    GROUP BY `customerId`;
+
+
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE TABLE `tbl-commodity-flashsale-vote-two-result`
+AS
+    SELECT `itemName`, COUNT (`customerId`) AS `votesCount`
+    FROM `tbl-commodity-flashsale-vote-user-item-timestamp`
+    GROUP BY `itemName`
+    EMIT CHANGES;

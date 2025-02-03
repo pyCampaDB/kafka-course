@@ -1,0 +1,79 @@
+DROP STREAM IF EXISTS `s-commodity-loan-payment-latency` DELETE TOPIC;
+DROP STREAM IF EXISTS `s-commodity-loan-payment` DELETE TOPIC;
+
+CREATE STREAM `s-commodity-loan-payment` (
+    `loanNumber` VARCHAR,
+    `installmentDueDate` VARCHAR,
+    `installmentPaidDate` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-commodity-loan-payment',
+    PARTITIONS = 2,
+    VALUE_FORMAT = 'JSON'
+); 
+
+
+CREATE STREAM `s-commodity-loan-payment-latency` 
+    AS SELECT
+        `loanNumber`,
+        `installmentDueDate`,
+        `installmentPaidDate`,
+        UNIX_DATE(PARSE_DATE(`installmentPaidDate`, 'yyyy-MM-dd')) - UNIX_DATE(PARSE_DATE(`installmentDueDate`, 'yyyy-MM-dd')) AS `paymentLatency`
+    FROM `s-commodity-loan-payment`
+EMIT CHANGES;
+
+
+INSERT INTO `s-commodity-loan-payment`
+VALUES (
+    'LOAN-111',
+    '2025-08-27',
+    '2025-08-23'
+);
+
+INSERT INTO `s-commodity-loan-payment`
+VALUES (
+    'LOAN-222',
+    '2025-03-31',
+    '2025-04-05'
+);
+
+
+INSERT INTO `s-commodity-loan-payment` (
+    `loanNumber`,
+    `installmentDueDate`,
+    `installmentPaidDate`
+) VALUES (
+    'LOAN-222',
+    '2025-01-31',
+    '2025-01-27'
+);
+
+INSERT INTO `s-commodity-loan-payment` (
+    `loanNumber`,
+    `installmentDueDate`,
+    `installmentPaidDate`
+) VALUES (
+    'LOAN-222',
+    '2025-05-31',
+    '2025-05-23'
+);
+
+
+INSERT INTO `s-commodity-loan-payment` (
+    `loanNumber`,
+    `installmentDueDate`,
+    `installmentPaidDate`
+) VALUES (
+    'LOAN-222',
+    '2025-06-28',
+    '2025-06-29'
+);
+
+INSERT INTO `s-commodity-loan-payment`
+VALUES (
+    'LOAN-333',
+    '2025-09-27',
+    '2025-10-07'
+);
+
+
+DESCRIBE `s-commodity-loan-payment-latency`;

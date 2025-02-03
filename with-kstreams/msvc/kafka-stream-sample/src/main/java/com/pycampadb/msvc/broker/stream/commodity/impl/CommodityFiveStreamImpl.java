@@ -4,7 +4,7 @@ import com.pycampadb.msvc.broker.message.OrderMessage;
 import com.pycampadb.msvc.broker.message.OrderPatternMessage;
 import com.pycampadb.msvc.broker.message.OrderRewardMessage;
 import com.pycampadb.msvc.broker.stream.commodity.CommodityStream;
-import com.pycampadb.msvc.util.CommodityStreamUtil;
+import com.pycampadb.msvc.util.commodity.CommodityStreamUtil;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;

@@ -1,0 +1,11 @@
+{
+	"type": "record",
+	"namespace": "com.pycampadb.avro.data",
+	"name": "EmployeeNotForwardV2",
+	"fields": [
+		{
+			"name": "firstName",
+			"type": "string"
+		}
+	]
+}

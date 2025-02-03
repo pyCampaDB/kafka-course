@@ -1,0 +1,86 @@
+DROP STREAM IF EXISTS `s-commodity-subscription-offer-one`;
+DROP STREAM IF EXISTS `s-commodity-subscription-offer-two`;
+
+DROP TABLE IF EXISTS `tbl-commodity-subscription-user`;
+DROP TABLE IF EXISTS `tbl-commodity-subscription-user-repartition`;
+
+DROP STREAM IF EXISTS `s-commodity-subscription-user`;
+DROP STREAM IF EXISTS `s-commodity-subscription-purchase`;
+
+
+CREATE STREAM `s-commodity-subscription-user` (
+    `username` VARCHAR KEY,
+    `duration` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-commodity-subscription-user',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+CREATE STREAM `s-commodity-subscription-purchase` (
+    `username` VARCHAR KEY,
+    `subscriptionNumber` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-commodity-subscription-purchase',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+CREATE TABLE `tbl-commodity-subscription-user` 
+    AS SELECT
+        `username`,
+        LATEST_BY_OFFSET(`duration`) AS `duration`
+    FROM `s-commodity-subscription-user`
+    GROUP BY `username`
+EMIT CHANGES;
+
+-- VEMOS QUE el tópico de purchase tiene 5 particiones, mientras que el de user tiene 2
+
+DESCRIBE `s-commodity-subscription-purchase` EXTENDED;
+DESCRIBE `tbl-commodity-subscription-user` EXTENDED;
+
+
+-- Esta unión fallará ya que tiene distinto número de particiones 
+--CREATE STREAM `s-commodity-subscription-offer-one` 
+--    AS SELECT 
+--        `s-purchase`.`username` AS `username`,
+--        `subscriptionNumber`,
+--        `duration`
+--    FROM `s-commodity-subscription-purchase` `s-purchase`
+--        INNER JOIN `tbl-commodity-subscription-user` `tbl-user`
+--        ON `s-purchase`.`username` = `tbl-user`.`username`
+--EMIT CHANGES;
+
+
+
+-- ################################### REPARTICION ##############################################
+CREATE TABLE `tbl-commodity-subscription-user-repartition`
+WITH (
+    PARTITIONS = 5
+) AS SELECT 
+        `username`,
+        LATEST_BY_OFFSET(`duration`) `duration`
+    FROM `s-commodity-subscription-user`
+    GROUP BY `username`
+EMIT CHANGES;
+
+
+-- Vemos que la tabla tiene 5 particiones
+DESCRIBE `tbl-commodity-subscription-user-repartition` EXTENDED;
+
+
+
+
+
+
+
+-- Ahora sí que podemos hacer el INNER JOIN
+CREATE STREAM `s-commodity-subscription-offer-two` 
+    AS SELECT 
+        `s-purchase`.`username` AS `username`,
+        `subscriptionNumber`,
+        `duration`
+    FROM `s-commodity-subscription-purchase` `s-purchase`
+        INNER JOIN `tbl-commodity-subscription-user-repartition` `tbl-user`
+        ON `s-purchase`.`username` = `tbl-user`.`username`
+EMIT CHANGES;

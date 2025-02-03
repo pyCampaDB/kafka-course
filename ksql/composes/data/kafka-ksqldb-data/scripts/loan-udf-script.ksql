@@ -1,0 +1,57 @@
+SHOW FUNCTIONS;
+
+-- función creada en la clase LoanUdf de kafka-ksqldb-udf.jar
+DESCRIBE FUNCTION LOAN_INSTALLMENT;
+
+DROP STREAM IF EXISTS `s-commodity-loan-request` DELETE TOPIC;
+
+CREATE STREAM `s-commodity-loan-request` (
+    `username` VARCHAR,
+    `principalLoanAmount` DOUBLE,
+    `annualInterestRate` DOUBLE,
+    `loanPeriodMonth` INT
+) WITH (
+    KAFKA_TOPIC = 't-commodity-loan-request',
+    PARTITIONS = 2,
+    VALUE_FORMAT = 'JSON'
+);
+
+
+INSERT INTO `s-commodity-loan-request` (
+    `username`,
+    `principalLoanAmount`,
+    `annualInterestRate`,
+    `loanPeriodMonth`
+) VALUES (
+    'Zaraki Kenpachi',
+    1000,
+    12,
+    12
+);
+
+
+INSERT INTO `s-commodity-loan-request` (
+    `username`,
+    `principalLoanAmount`,
+    `annualInterestRate`,
+    `loanPeriodMonth`
+) VALUES (
+    'Hitokiri Battösai',
+    1500,
+    10.5,
+    17
+);
+
+
+INSERT INTO `s-commodity-loan-request` (
+    `username`,
+    `principalLoanAmount`,
+    `annualInterestRate`,
+    `loanPeriodMonth`
+) VALUES (
+    'Madara Uchiha',
+    1300,
+    9,
+    29
+);
+

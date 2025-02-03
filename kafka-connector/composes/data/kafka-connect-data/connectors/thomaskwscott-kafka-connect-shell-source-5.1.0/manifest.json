@@ -1,0 +1,36 @@
+{
+  "name" : "kafka-connect-shell-source",
+  "version" : "5.1.0",
+  "title" : "Kafka Connect Shell",
+  "description" : "The Shell source connector allows you to run shell commands and ingest the output into kafka.",
+  "owner" : {
+    "username" : "thomaskwscott",
+    "type" : "user",
+    "name" : "Thomas Scott",
+    "url" : "https://github.com/thomaskwscott",
+    "logo" : "assets/thomaskwscott.png"
+  },
+  "support" : {
+    "summary" : "Support is provided as best effort only. Please register any issues in the github project.",
+    "url" : "https://github.com/thomaskwscott/kafka-connect-shell-source/issues",
+    "logo" : "assets/shell.png",
+    "provider_name" : "Thomas Scott"
+  },
+  "tags" : [ "shell" ],
+  "features" : {
+    "supported_encodings" : [ "any" ],
+    "single_message_transforms" : true,
+    "confluent_control_center_integration" : true,
+    "kafka_connect_api" : true
+  },
+  "logo" : "assets/shell.png",
+  "documentation_url" : "https://thomaskwscott.github.io/kafka-connect-shell-source",
+  "source_url" : "https://github.com/thomaskwscott/kafka-connect-shell-source",
+  "docker_image" : { },
+  "license" : [ {
+    "name" : "Apache License 2.0",
+    "url" : "http://www.apache.org/licenses/LICENSE-2.0.html"
+  } ],
+  "component_types" : [ "source" ],
+  "release_date" : "2019-02-23"
+}

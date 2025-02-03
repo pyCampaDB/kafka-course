@@ -1,0 +1,172 @@
+DROP TABLE IF EXISTS `tbl-commodity-inventory-total-two`;
+DROP STREAM IF EXISTS `s-commodity-inventory-movement`;
+
+DROP STREAM IF EXISTS `s-commodity-inventory-four`;
+
+-- PARA EL EJEMPLO CON TUMBLING WINDOW, USAREMOS ESTA TABLA Y ESTE STREAM
+DROP TABLE IF EXISTS `tbl-commodity-inventory-total-five`;
+DROP STREAM IF EXISTS `s-commodity-inventory-five-movement`;
+
+-- PARA EL EJEMPLO CON HOPPING WINDOW, USAREMOS ESTA TABLA Y ESTE STREAM
+DROP TABLE IF EXISTS `tbl-commodity-inventory-total-six`;
+DROP STREAM IF EXISTS `s-commodity-inventory-six-movement`;
+
+-- PARA EL EJEMPLO CON SESSION WINDOW, USAREMOS ESTA TABLA Y ESTE STREAM
+DROP TABLE IF EXISTS `tbl-commodity-inventory-total-seven`;
+DROP STREAM IF EXISTS `s-commodity-inventory-seven-movement`;
+
+DROP STREAM IF EXISTS `s-commodity-inventory`;
+
+
+
+
+
+
+CREATE OR REPLACE STREAM `s-commodity-inventory` (
+    `item` VARCHAR,
+    `location` VARCHAR,
+    `quantity` INT,
+    `transactionTime`VARCHAR,
+    `type` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-commodity-inventory',
+    VALUE_FORMAT = 'JSON'    
+);
+
+
+
+
+
+CREATE OR REPLACE STREAM `s-commodity-inventory-movement`
+AS
+    SELECT `item`,
+        CASE
+            WHEN `type` = 'ADD' THEN `quantity`
+            WHEN `type` = 'REMOVE' THEN (-1 * `quantity`)
+            ELSE 0
+        END AS `quantity`
+    FROM `s-commodity-inventory`
+    EMIT CHANGES;
+
+
+
+
+
+
+CREATE OR REPLACE TABLE `tbl-commodity-inventory-total-two`
+AS 
+    SELECT
+        `item`, SUM (`quantity`) AS `totalQuantity`
+    FROM `s-commodity-inventory-movement`
+    GROUP BY `item`
+    EMIT CHANGES;
+
+
+
+
+
+CREATE OR REPLACE STREAM `s-commodity-inventory-four` 
+WITH (
+    TIMESTAMP = '`transactionTime`',
+    TIMESTAMP_FORMAT = 'yyyy-MM-dd''T''HH:mm:ss.SSSZ'
+) AS SELECT
+        `item`, `location`, `quantity`, `transactionTime`, `type`
+    FROM `s-commodity-inventory` EMIT CHANGES;
+
+
+
+
+
+
+CREATE OR REPLACE STREAM `s-commodity-inventory-five-movement` 
+    WITH (
+        TIMESTAMP = '`transactionTime`',
+        TIMESTAMP_FORMAT = 'yyyy-MM-dd''T''HH:mm:ss.SSSZ'
+    ) AS SELECT 
+            `item`,
+            CASE 
+                WHEN `type` = 'ADD' THEN `quantity`
+                WHEN `type` = 'REMOVE' THEN (-1 * `quantity`)
+                ELSE 0
+            END AS `quantity`,
+            `transactionTime`
+        FROM `s-commodity-inventory` EMIT CHANGES;
+
+
+
+-- ####################################### TUMBLING TIME WINDOWS #####################################################
+
+CREATE OR REPLACE TABLE `tbl-commodity-inventory-total-five` 
+    AS SELECT 
+        FORMAT_TIMESTAMP (FROM_UNIXTIME(windowstart), 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `windowStartTime`,
+        FORMAT_TIMESTAMP (FROM_UNIXTIME(windowend), 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `windowEndTime`,
+        `item`,
+        SUM(`quantity`) `totalQuantity` 
+    FROM `s-commodity-inventory-five-movement`
+WINDOW TUMBLING (SIZE 1 HOUR)
+GROUP BY `item`
+EMIT CHANGES;
+
+
+
+
+
+
+CREATE OR REPLACE STREAM `s-commodity-inventory-six-movement` 
+    WITH (
+        TIMESTAMP = '`transactionTime`',
+        TIMESTAMP_FORMAT = 'yyyy-MM-dd''T''HH:mm:ss.SSSZ'
+    ) AS SELECT 
+            `item`,
+            CASE 
+                WHEN `type` = 'ADD' THEN `quantity`
+                WHEN `type` = 'REMOVE' THEN (-1 * `quantity`)
+                ELSE 0
+            END AS `quantity`,
+            `transactionTime`
+        FROM `s-commodity-inventory` EMIT CHANGES;
+
+
+
+-- ##################################### HOPPING WINDOW ############################################
+CREATE OR REPLACE TABLE `tbl-commodity-inventory-total-six`
+    AS SELECT
+        FORMAT_TIMESTAMP( FROM_UNIXTIME(windowstart), 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `windowStartTime`,
+        FORMAT_TIMESTAMP( FROM_UNIXTIME(windowend), 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `windowEndTime`,
+        `item`, SUM(`quantity`) `totalQuantity`
+    FROM `s-commodity-inventory-six-movement`
+WINDOW HOPPING (SIZE 1 HOUR, ADVANCE BY 20 MINUTES)
+GROUP BY `item`
+EMIT CHANGES; 
+
+
+
+
+
+
+
+
+CREATE OR REPLACE STREAM `s-commodity-inventory-seven-movement` 
+    WITH (
+        TIMESTAMP = '`transactionTime`',
+        TIMESTAMP_FORMAT = 'yyyy-MM-dd''T''HH:mm:ss.SSSZ'
+    ) AS SELECT 
+            `item`,
+            CASE 
+                WHEN `type` = 'ADD' THEN `quantity`
+                WHEN `type` = 'REMOVE' THEN (-1 * `quantity`)
+                ELSE 0
+            END AS `quantity`,
+            `transactionTime`
+        FROM `s-commodity-inventory` EMIT CHANGES;
+
+-- ##################################### SESSION WINDOW ############################################
+CREATE OR REPLACE TABLE `tbl-commodity-inventory-total-seven`
+    AS SELECT
+        FORMAT_TIMESTAMP( FROM_UNIXTIME(windowstart), 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `windowStartTime`,
+        FORMAT_TIMESTAMP( FROM_UNIXTIME(windowend), 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `windowEndTime`,
+        `item`, SUM(`quantity`) `totalQuantity`
+    FROM `s-commodity-inventory-seven-movement`
+WINDOW SESSION (30 MINUTES)
+GROUP BY `item`
+EMIT CHANGES; 

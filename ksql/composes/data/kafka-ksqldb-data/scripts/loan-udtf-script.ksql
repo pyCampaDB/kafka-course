@@ -1,0 +1,25 @@
+DROP STREAM IF EXISTS `s-commodity-loan-submission` DELETE TOPIC;
+
+CREATE STREAM `s-commodity-loan-submission`(
+    `loanSubmission` STRUCT <
+                        `principalLoanAmount` DOUBLE,
+                        `annualInterestRate` DOUBLE,
+                        `loanPeriodMonth` INT,
+                        `loanApprovedDate` VARCHAR
+                    >
+) WITH (
+    KAFKA_TOPIC = 't-commodity-loan-submission',
+    PARTITIONS = 2,
+    VALUE_FORMAT = 'JSON'
+);
+
+INSERT INTO `s-commodity-loan-submission` (
+    `loanSubmission`
+) VALUES (
+    STRUCT (
+        `principalLoanAmount` := 6000,
+        `annualInterestRate` := 11.5,
+        `loanPeriodMonth` := 24,
+        `loanApprovedDate` := '2025-01-31'
+    )
+);

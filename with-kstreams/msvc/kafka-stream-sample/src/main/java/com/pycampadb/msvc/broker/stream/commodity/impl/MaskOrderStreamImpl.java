@@ -2,7 +2,7 @@ package com.pycampadb.msvc.broker.stream.commodity.impl;
 
 import com.pycampadb.msvc.broker.message.OrderMessage;
 import com.pycampadb.msvc.broker.stream.commodity.MaskOrderStream;
-import com.pycampadb.msvc.util.CommodityStreamUtil;
+import com.pycampadb.msvc.util.commodity.CommodityStreamUtil;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;

@@ -1,0 +1,62 @@
+DROP STREAM IF EXISTS `s-commodity-premium-offer-one`;
+DROP STREAM IF EXISTS `s-commodity-premium-offer-two`;
+
+DROP TABLE IF EXISTS `tbl-commodity-premium-user`;
+
+DROP STREAM IF EXISTS `s-commodity-premium-purchase`;
+DROP STREAM IF EXISTS `s-commodity-premium-user`;
+
+CREATE STREAM `s-commodity-premium-purchase` (
+    `username` VARCHAR,
+    `purchaseNumber` VARCHAR,
+    `item` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-commodity-premium-purchase',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+CREATE STREAM `s-commodity-premium-user` (
+    `username` VARCHAR,
+    `level` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-commodity-premium-user',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+CREATE TABLE `tbl-commodity-premium-user`
+    AS SELECT 
+        `username`,
+        LATEST_BY_OFFSET(`level`) AS `level`
+    FROM `s-commodity-premium-user`
+    GROUP BY `username`
+EMIT CHANGES;
+
+
+
+-- ############################# INNER JOIN STREAM - TABLE #########################
+CREATE STREAM `s-commodity-premium-offer-one`
+    AS SELECT
+        `s-purchase`.`username` AS `username`,
+        `level`,
+        `purchaseNumber`
+    FROM `s-commodity-premium-purchase` `s-purchase` 
+        INNER JOIN `tbl-commodity-premium-user` `tbl-user`
+        ON `s-purchase`.`username` = `tbl-user`.`username`
+    WHERE LCASE(`level`) IN ('gold', 'diamond')
+EMIT CHANGES;
+
+
+
+-- ############################# LEFT JOIN STREAM - TABLE #########################
+CREATE STREAM `s-commodity-premium-offer-two`
+    AS SELECT
+        `s-purchase`.`username` AS `username`,
+        `level`,
+        `purchaseNumber`
+    FROM `s-commodity-premium-purchase` `s-purchase` 
+        LEFT JOIN `tbl-commodity-premium-user` `tbl-user`
+        ON `s-purchase`.`username` = `tbl-user`.`username`
+    WHERE `level` IS NULL OR LCASE(`level`) IN ('gold', 'diamond')
+EMIT CHANGES;

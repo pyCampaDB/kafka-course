@@ -1,0 +1,79 @@
+DROP STREAM IF EXISTS `s-avro-member-black`;
+DROP TABLE IF EXISTS `tbl-avro-member-count`;
+DROP STREAM IF EXISTS `s-avro-member`;
+
+-- Aquí vamos a crear el schema con ksql
+-- Crea y registra directamente el schema en el kafka-registry,
+-- podemos consultarlo en la url de postman, sección
+-- Writing Avro Schema, endpoint List subjects
+-- esto se produce gracias al VALUE_FORMAT = 'AVRO'
+CREATE STREAM `s-avro-member`(
+    `email` VARCHAR,
+    `username` VARCHAR,
+    `birthDate` VARCHAR,
+    `membership` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 'sc-avro-member',
+    PARTITIONS = 1,
+    VALUE_FORMAT = 'AVRO'
+);
+
+
+INSERT INTO `s-avro-member` 
+VALUES (
+    'zk@email.com',
+    'zarakiKenpachi',
+    '1912-11-13',
+    'black'
+);
+
+INSERT INTO `s-avro-member` 
+VALUES (
+    'um@email.com',
+    'uchihaMadara',
+    '1907-09-13',
+    'diamond'
+);
+
+INSERT INTO `s-avro-member` 
+VALUES (
+    'hb@email.com',
+    'hitokiriBattösai',
+    '1977-04-13',
+    'blue'
+);
+
+INSERT INTO `s-avro-member` 
+VALUES (
+    'gs@email.com',
+    'gojoSatoru',
+    '2004-11-26',
+    'black'
+);
+
+INSERT INTO `s-avro-member` 
+VALUES (
+    'sg@email.com',
+    'sonGoku',
+    '1954-05-13',
+    'green'
+);
+
+
+CREATE STREAM `s-avro-member-black` 
+WITH(
+    VALUE_FORMAT = 'AVRO'
+) AS SELECT * FROM `s-avro-member`
+    WHERE LCASE(`membership`) = 'black';
+
+CREATE TABLE `tbl-avro-member-count` 
+WITH (
+    VALUE_FORMAT = 'AVRO'
+) AS SELECT 
+    `membership`, 
+    COUNT(`email`) AS `countMember`
+  FROM `s-avro-member`
+  GROUP BY `membership`
+EMIT CHANGES;
+
+DESCRIBE `tbl-avro-member-count`;

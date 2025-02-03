@@ -1,0 +1,122 @@
+-- debemos borrar las tablas antes, ya que al depender de los streams, 
+-- no nos permiten borrarlos
+DROP TABLE IF EXISTS `tbl-commodity-customer-preference-all`;
+
+DROP TABLE IF EXISTS `tbl-commodity-customer-preference-shopping-cart`;
+DROP TABLE IF EXISTS `tbl-commodity-customer-cogroup-shopping-cart`;
+
+DROP TABLE IF EXISTS `tbl-commodity-customer-preference-wishlist`;
+DROP TABLE IF EXISTS `tbl-commodity-customer-cogroup-wishlist`;
+
+
+
+DROP STREAM IF EXISTS `s-commodity-customer-preference-shopping-cart`;
+DROP STREAM IF EXISTS `s-commodity-customer-preference-wishlist`;
+
+
+
+
+
+CREATE OR REPLACE STREAM `s-commodity-customer-preference-shopping-cart` (
+    `customerId` VARCHAR,
+    `itemName` VARCHAR,
+    `cartAmount` INT,
+    `cartDateTime` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-commodity-customer-preference-shopping-cart',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+
+
+
+CREATE OR REPLACE STREAM `s-commodity-customer-preference-wishlist` (
+    `customerId` VARCHAR,
+    `itemName` VARCHAR,
+    `wishlistDateTime` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-commodity-customer-preference-wishlist',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+
+
+
+CREATE TABLE `tbl-commodity-customer-cogroup-shopping-cart` WITH (
+    KEY_FORMAT = 'JSON'
+) AS 
+    SELECT `customerId`,
+        `itemName`,
+        ARRAY_MAX (
+            COLLECT_LIST(`cartDateTime`) -- cogemos la lista de los tiempos
+        ) AS `latestCartDateTime` -- con ARRAY_MAX nos quedamos con el valor máximo
+    FROM `s-commodity-customer-preference-shopping-cart`
+    GROUP BY `customerId`, `itemName`
+    EMIT CHANGES;
+
+
+
+
+
+
+CREATE TABLE `tbl-commodity-customer-preference-shopping-cart` AS 
+    SELECT `customerId`,
+        AS_MAP (
+            COLLECT_LIST(`itemName`),
+            COLLECT_LIST(`latestCartDateTime`)
+        ) AS `cartItems`
+    FROM `tbl-commodity-customer-cogroup-shopping-cart`
+    GROUP BY `customerId`
+    EMIT CHANGES;
+
+
+
+
+
+
+
+
+CREATE OR REPLACE TABLE `tbl-commodity-customer-cogroup-wishlist` 
+WITH (
+    KEY_FORMAT = 'JSON'
+)
+AS 
+    SELECT `customerId`, `itemName`,
+        ARRAY_MAX (
+            COLLECT_LIST(`wishlistDateTime`)
+        ) AS `latestWishlistDateTime`
+    FROM `s-commodity-customer-preference-wishlist`
+    GROUP BY `customerId`, `itemName`
+    EMIT CHANGES;
+
+
+
+
+
+
+CREATE OR REPLACE TABLE `tbl-commodity-customer-preference-wishlist` 
+AS 
+    SELECT `customerId`,
+        AS_MAP(COLLECT_LIST(`itemName`), COLLECT_LIST(`latestWishlistDateTime`)) AS `wishlistItems`
+    FROM `tbl-commodity-customer-cogroup-wishlist`
+    GROUP BY `customerId` 
+    EMIT CHANGES;
+
+
+
+
+
+
+
+
+CREATE OR REPLACE TABLE `tbl-commodity-customer-preference-all` 
+AS 
+    SELECT `tbl-commodity-customer-preference-shopping-cart`.`customerId` AS `customerId`,
+        `cartItems`,
+        `wishlistItems`
+    FROM `tbl-commodity-customer-preference-shopping-cart`
+        JOIN `tbl-commodity-customer-preference-wishlist`
+        ON `tbl-commodity-customer-preference-shopping-cart`.`customerId` = `tbl-commodity-customer-preference-wishlist`.`customerId`
+    EMIT CHANGES;

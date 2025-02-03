@@ -1,0 +1,9 @@
+DROP STREAM IF EXISTS `s-avro-01`;
+
+CREATE STREAM `s-avro01` 
+WITH(
+    KAFKA_TOPIC = 'sc-avro01',
+    VALUE_FORMAT = 'AVRO'
+);
+
+-- DESCRIBE `s-avro01`;

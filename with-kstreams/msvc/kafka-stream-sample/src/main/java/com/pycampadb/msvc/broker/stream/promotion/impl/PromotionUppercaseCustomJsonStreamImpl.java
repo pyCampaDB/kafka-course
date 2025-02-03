@@ -2,7 +2,7 @@ package com.pycampadb.msvc.broker.stream.promotion.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pycampadb.msvc.broker.message.PromotionMessage;
-import com.pycampadb.msvc.broker.serde.PromotionSerde;
+import com.pycampadb.msvc.broker.serde.promotion.PromotionSerde;
 import com.pycampadb.msvc.broker.stream.promotion.PromotionUppercaseCustomJsonStream;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;

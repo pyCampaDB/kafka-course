@@ -1,0 +1,86 @@
+-- al haber ejecutado el script previamente sin el último insert, ya tenemos una query en el flujo,
+-- para poder eliminar los flujos, necesitamos eliminar esta query.
+-- Esta sentencia no debemos utilizarla en el futuro, ya que seguramente cambiará el ID
+-- TERMINATE INSERTQUERY_123; -- comentada la query mencionada
+-- TERMINATE INSERTQUERY_139;
+-- TERMINATE INSERTQUERY_141;
+
+-- En caso de querer ejecutarlo de nuevo, dejo la eliminación de querys necesarias:
+TERMINATE INSERTQUERY_159;
+TERMINATE INSERTQUERY_161;
+
+-- borramos los flujos en caso de que existan
+DROP STREAM IF EXISTS `s-commodity-customer-purchase-all` DELETE TOPIC;
+DROP STREAM IF EXISTS `s-commodity-customer-purchase-mobile`;
+DROP STREAM IF EXISTS `s-commodity-customer-purchase-web`;
+
+
+--creamos los flujos
+CREATE OR REPLACE STREAM `s-commodity-customer-purchase-mobile` (
+    `purchaseNumber` VARCHAR,
+    `purchaseAmount` VARCHAR,
+    `mobileAppVersion` VARCHAR,
+    `operatingSystem` VARCHAR,
+    `location` STRUCT <
+                        `latitude` DOUBLE,
+                        `longitude` DOUBLE
+                        >
+) WITH (
+    KAFKA_TOPIC = 't-commodity-customer-purchase-mobile',
+    VALUE_FORMAT = 'JSON'
+);
+
+CREATE OR REPLACE STREAM `s-commodity-customer-purchase-web` (
+    `purchaseNumber` VARCHAR,
+    `purchaseAmount` VARCHAR,
+    `browser` VARCHAR,
+    `operatingSystem` VARCHAR 
+) WITH (
+    KAFKA_TOPIC = 't-commodity-customer-purchase-web',
+    VALUE_FORMAT = 'JSON'
+);
+
+CREATE OR REPLACE STREAM `s-commodity-customer-purchase-all` (
+    `purchaseNumber` VARCHAR,
+    `purchaseAmount` VARCHAR,
+    `mobileAppVersion` VARCHAR,
+    `operatingSystem` VARCHAR,
+    `location` STRUCT < `latitude` DOUBLE, `longitude` DOUBLE>,
+    `browser` VARCHAR,
+    `source` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-ksql-commodity-customer-purchase-all',
+    PARTITIONS = 2,
+    REPLICAS = 1,
+    VALUE_FORMAT = 'JSON'
+);
+
+-- INSERTAMOS DATOS EN EL FLUJO TOTAL A TRAVÉS DEL FLUJO DE MÓVILES
+INSERT INTO `s-commodity-customer-purchase-all` 
+    SELECT `purchaseNumber`,
+        `purchaseAmount`,
+        `mobileAppVersion`,
+        `operatingSystem`,
+        `location`,
+        CAST(null AS VARCHAR) AS `browser`,
+        'mobile' AS `source`
+    FROM `s-commodity-customer-purchase-mobile`
+    EMIT CHANGES;
+
+-- INSERTAMOS DATOS EN EL FLUJO TOTAL A TRAVÉS DEL FLUJO WEB
+INSERT INTO `s-commodity-customer-purchase-all`
+    SELECT `purchaseNumber`,
+        `purchaseAmount`,
+        CAST (null AS VARCHAR) AS `mobileAppVersion`,
+        `operatingSystem`,
+        CAST (null AS STRUCT<`latitude` DOUBLE, `longitude` DOUBLE>) AS `location`,
+        `browser`,
+        'web' AS `source`
+    FROM `s-commodity-customer-purchase-web`
+    EMIT CHANGES;
+
+-- SELECT * FROM `s-commodity-customer-purchase-all` EMIT CHANGES; 
+-- Comento el select porque me devuelve este error:
+-- The following statement types should be issued to the websocket endpoint '/query':
+--        * PRINT
+--        * SELECT

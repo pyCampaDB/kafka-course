@@ -1,0 +1,43 @@
+DROP STREAM IF EXISTS `s-power-avro`;
+DROP STREAM IF EXISTS `s-power-json`;
+
+CREATE STREAM `s-power-json` (
+    `power` VARCHAR,
+    `level` INT
+) WITH (
+    KAFKA_TOPIC = 't-power-json',
+    PARTITIONS = 1,
+    VALUE_FORMAT = 'JSON'
+);
+
+INSERT INTO `s-power-json` 
+    VALUES (
+        'healing',
+        6
+    );
+
+
+INSERT INTO `s-power-json` 
+    VALUES (
+        'energy projection',
+        9
+    );
+
+INSERT INTO `s-power-json` 
+    VALUES (
+        'mind control',
+        7
+    );
+
+
+CREATE STREAM `s-power-avro` 
+WITH (
+    VALUE_FORMAT = 'AVRO'
+) AS SELECT * FROM `s-power-json` EMIT CHANGES;
+
+
+INSERT INTO `s-power-json` 
+    VALUES (
+        'bad level',
+        3
+    );

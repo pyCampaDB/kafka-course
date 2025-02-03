@@ -1,0 +1,50 @@
+DROP TABLE IF EXISTS `tbl-commodity-feedback-rating-one`;
+DROP TABLE IF EXISTS `tbl-commodity-feedback-rating-two`;
+
+-- no me permite borrarlo porque tengo otros streams creados de lecciones anteriores que dependen de este
+-- DROP STREAM IF EXISTS `s-commodity-feedback`; 
+
+
+
+
+
+CREATE OR REPLACE STREAM `s-commodity-feedback` (
+    `feedback` VARCHAR,
+    `feedbackDateTime` VARCHAR,
+    `location` VARCHAR,
+    `rating` INT
+) WITH (
+    KAFKA_TOPIC = 't-commodity-feedback',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+
+
+
+CREATE TABLE `tbl-commodity-feedback-rating-one` 
+AS 
+    SELECT `location`,
+        AVG (`rating`) AS `averageRating`
+    FROM `s-commodity-feedback`
+    GROUP BY `location`
+    EMIT CHANGES;
+
+
+
+
+
+CREATE TABLE `tbl-commodity-feedback-rating-two` 
+AS 
+    SELECT `location`,
+        AVG (`rating`) AS `averageRating`,
+        HISTOGRAM(CAST(`rating` AS VARCHAR)) AS `histogramRating`
+    FROM `s-commodity-feedback`
+    GROUP BY `location`
+    EMIT CHANGES;
+
+
+
+
+-- para cuando ejecutemos el select o print, nos deje ver los mensajes que no hemos leído
+SET 'auto.offset.reset'='earliest';

@@ -1,0 +1,12 @@
+DROP STREAM IF EXISTS `s-avro-member-json`;
+
+--prueba para ver si funciona llamar a otro script desde existe
+-- RUN SCRIPT /data/scripts/avro-create-schema-script.ksql;
+-- NO PERMITIDO
+
+-- Ya existe `s-avro-member` del script anterior 'avro-create-schema-script.ksql'
+-- vamos a comvertir de avro a json
+CREATE STREAM `s-avro-member-json` 
+WITH (
+    VALUE_FORMAT = 'JSON'
+) AS SELECT * FROM `s-avro-member` EMIT CHANGES;

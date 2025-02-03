@@ -1,0 +1,125 @@
+DROP TABLE IF EXISTS `tbl-commodity-web-vote-one-result-color`;
+DROP TABLE IF EXISTS `tbl-commodity-web-vote-one-result-layout`;
+
+DROP TABLE IF EXISTS `tbl-commodity-web-vote-two-result-color`;
+DROP TABLE IF EXISTS `tbl-commodity-web-vote-two-result-layout`;
+
+DROP TABLE IF EXISTS `tbl-commodity-web-vote-two-result-color`;
+DROP TABLE IF EXISTS `tbl-commodity-web-vote-two-result-layout`;
+
+DROP TABLE IF EXISTS `tbl-commodity-web-vote-username-color`;
+DROP TABLE IF EXISTS `tbl-commodity-web-vote-username-layout`;
+
+DROP STREAM IF EXISTS `s-commodity-web-vote-color`;
+DROP STREAM IF EXISTS `s-commodity-web-vote-layout`;
+
+
+
+CREATE STREAM `s-commodity-web-vote-color` (
+    `username` VARCHAR,
+    `color` VARCHAR,
+    `voteDateTime` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-commodity-web-vote-color',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+CREATE STREAM `s-commodity-web-vote-layout` (
+    `username` VARCHAR,
+    `layout` VARCHAR,
+    `voteDateTime` VARCHAR
+) WITH (
+    KAFKA_TOPIC = 't-commodity-web-vote-layout',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+CREATE TABLE `tbl-commodity-web-vote-username-color` 
+    AS SELECT 
+        `username`,
+        LATEST_BY_OFFSET(`color`) AS `color`
+    FROM `s-commodity-web-vote-color`
+    GROUP BY `username`
+EMIT CHANGES;
+
+
+CREATE TABLE `tbl-commodity-web-vote-username-layout` 
+    AS SELECT 
+        `username`,
+        LATEST_BY_OFFSET(`layout`) AS `layout`
+    FROM `s-commodity-web-vote-layout`
+    GROUP BY `username`
+EMIT CHANGES;
+
+
+-- ################################# INNER JOIN ENTRE TABLAS ######################################################
+CREATE TABLE `tbl-commodity-web-vote-one-result-color` 
+    AS SELECT 
+        `color`,
+        COUNT (`tbl-color`.`username`) AS `votesCount`
+    FROM `tbl-commodity-web-vote-username-color` AS `tbl-color`
+        INNER JOIN `tbl-commodity-web-vote-username-layout` AS `tbl-layout`
+        ON `tbl-color`.`username` = `tbl-layout`.`username`
+    GROUP BY `color` 
+EMIT CHANGES;
+
+
+CREATE TABLE `tbl-commodity-web-vote-one-result-layout` 
+    AS SELECT 
+        `layout`,
+        COUNT (`tbl-layout`.`username`) AS `votesCount`
+    FROM `tbl-commodity-web-vote-username-layout` AS `tbl-layout`
+        INNER JOIN `tbl-commodity-web-vote-username-color` AS `tbl-color`
+        ON `tbl-color`.`username` = `tbl-layout`.`username`
+    GROUP BY `layout` 
+EMIT CHANGES;
+
+
+
+-- ################################# LEFT JOIN ENTRE TABLAS ######################################################
+CREATE TABLE `tbl-commodity-web-vote-two-result-color` 
+    AS SELECT 
+        `color`,
+        COUNT (`tbl-color`.`username`) AS `votesCount`
+    FROM `tbl-commodity-web-vote-username-color` AS `tbl-color`
+        LEFT JOIN `tbl-commodity-web-vote-username-layout` AS `tbl-layout`
+        ON `tbl-color`.`username` = `tbl-layout`.`username`
+    GROUP BY `color` 
+EMIT CHANGES;
+
+
+CREATE TABLE `tbl-commodity-web-vote-two-result-layout` 
+    AS SELECT 
+        `layout`,
+        COUNT (`tbl-layout`.`username`) AS `votesCount`
+    FROM `tbl-commodity-web-vote-username-layout` AS `tbl-layout`
+        LEFT JOIN `tbl-commodity-web-vote-username-color` AS `tbl-color`
+        ON `tbl-color`.`username` = `tbl-layout`.`username`
+    GROUP BY `layout` 
+EMIT CHANGES;
+
+
+
+
+-- ################################# OUTER/FULL JOIN ENTRE TABLAS ######################################################
+CREATE TABLE `tbl-commodity-web-vote-three-result-color` 
+    AS SELECT 
+        `color`,
+        COUNT (`tbl-color`.`username`) AS `votesCount`
+    FROM `tbl-commodity-web-vote-username-color` AS `tbl-color`
+        FULL JOIN `tbl-commodity-web-vote-username-layout` AS `tbl-layout`
+        ON `tbl-color`.`username` = `tbl-layout`.`username`
+    GROUP BY `color` 
+EMIT CHANGES;
+
+
+CREATE TABLE `tbl-commodity-web-vote-three-result-layout` 
+    AS SELECT 
+        `layout`,
+        COUNT (`tbl-layout`.`username`) AS `votesCount`
+    FROM `tbl-commodity-web-vote-username-layout` AS `tbl-layout`
+        FULL JOIN `tbl-commodity-web-vote-username-color` AS `tbl-color`
+        ON `tbl-color`.`username` = `tbl-layout`.`username`
+    GROUP BY `layout` 
+EMIT CHANGES;

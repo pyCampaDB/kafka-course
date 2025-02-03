@@ -1,0 +1,31 @@
+DROP CONNECTOR IF EXISTS `sink-postgresql-dummy-csv`;
+--DROP CONNECTOR IF EXISTS `source-spooldir-dummy-csv`;
+
+--CREATE SOURCE CONNECTOR `source-spooldir-dummy-csv` 
+--WITH (
+--    'connector.class'='com.github.jcustenborder.kafka.connect.spooldir.SpoolDirCsvSourceConnector',
+--    'topic'='t-spooldir-csv-demo',
+--    'input.file.pattern'='dummy-.*.csv',
+--    'input.path'='/data/inputs',
+--    'error.path'='/data/errors',
+--    'finished.path'='data/processed',
+--    'schema.generation.enabled'='true',
+--    'csv.first.row.as.header'='true',
+--    'empty.poll.wait.ms'='10000'
+--);
+
+CREATE SINK CONNECTOR `sink-postgresql-dummy-csv`
+WITH (
+    'connector.class'='io.confluent.connect.jdbc.JdbcSinkConnector',
+    'topics'='t-spooldir-csv-demo',
+    'confluent.topic.bootstrap.servers'='192.168.18.8:9092',
+    'connection.url'='jdbc:postgresql://192.168.18.8:5432/postgres',
+    'connection.user'='postgres',
+    'connection.password'='postgres',
+    'table.name.format'='kafka_employees',
+    'auto.create'='true',
+    'auto.evolve'='true',
+    'pk.mode'='record_value',
+    'pk.fields'='employee_id',
+    'insert.mode'='upsert'
+);

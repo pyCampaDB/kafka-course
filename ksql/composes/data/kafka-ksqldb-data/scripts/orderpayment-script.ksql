@@ -1,0 +1,104 @@
+DROP STREAM IF EXISTS `s-commodity-join-order-payment-three`;
+DROP STREAM IF EXISTS `s-commodity-join-order-payment-two`;
+DROP STREAM IF EXISTS `s-commodity-join-order-payment-one`;
+
+DROP STREAM IF EXISTS `s-commodity-online-order`;
+DROP STREAM IF EXISTS `s-commodity-online-payment`;
+
+
+CREATE STREAM `s-commodity-online-order` (
+    `orderDateTime` VARCHAR,
+    `onlineOrderNumber` VARCHAR KEY,
+    `totalAmount` INT,
+    `username` VARCHAR
+) WITH (
+    TIMESTAMP = '`orderDateTime`',
+    TIMESTAMP_FORMAT = 'yyyy-MM-dd''T''HH:mm:ss.SSSZ',
+    KAFKA_TOPIC = 't-commodity-online-order',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+CREATE STREAM `s-commodity-online-payment` (
+    `paymentDateTime` VARCHAR,
+    `onlineOrderNumber` VARCHAR KEY,
+    `paymentMethod` VARCHAR,
+    `paymentNumber` VARCHAR
+) WITH (
+    TIMESTAMP = '`paymentDateTime`',
+    TIMESTAMP_FORMAT = 'yyyy-MM-dd''T''HH:mm:ss.SSSZ',
+    KAFKA_TOPIC = 't-commodity-online-payment',
+    VALUE_FORMAT = 'JSON'
+);
+
+
+
+
+-- #################################### INNER JOIN #############################################################
+CREATE STREAM `s-commodity-join-order-payment-one` 
+    AS SELECT
+        `s-commodity-online-order`.`onlineOrderNumber` AS `onlineOrderNumber`,
+        PARSE_TIMESTAMP(`s-commodity-online-order`.`orderDateTime`, 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `orderDateTime`,
+        `s-commodity-online-order`.`totalAmount` AS `totalAmount`,
+        `s-commodity-online-order`.`username` as `username`,
+        PARSE_TIMESTAMP(`s-commodity-online-payment`.`paymentDateTime`, 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `paymentDateTime`,
+        `s-commodity-online-payment`.`paymentMethod` as `paymentMethod`,
+        `s-commodity-online-payment`.`paymentNumber` as `paymentNumber`
+    FROM `s-commodity-online-order`
+        INNER JOIN `s-commodity-online-payment`
+        WITHIN 1 HOUR GRACE PERIOD 0 MILLISECOND
+        ON `s-commodity-online-order`.`onlineOrderNumber` = `s-commodity-online-payment`.`onlineOrderNumber`
+EMIT CHANGES;
+
+
+--EVITAMOS EL WARNING DE DEPRECATION NOTICE: Stream-stream joins statements without a GRACE PERIOD
+-- ESTABLECIENDO SU VALOR EN 0 MILLISECOND SI NO QUEREMOS DARLE ESE PERIODO
+
+
+-- #################################### LEFT JOIN ############################################################
+CREATE STREAM `s-commodity-join-order-payment-two` 
+    AS SELECT
+        `s-commodity-online-order`.`onlineOrderNumber` AS `onlineOrderNumber`,
+        PARSE_TIMESTAMP(`s-commodity-online-order`.`orderDateTime`, 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `orderDateTime`,
+        `s-commodity-online-order`.`totalAmount` AS `totalAmount`,
+        `s-commodity-online-order`.`username` as `username`,
+        PARSE_TIMESTAMP(`s-commodity-online-payment`.`paymentDateTime`, 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `paymentDateTime`,
+        `s-commodity-online-payment`.`paymentMethod` as `paymentMethod`,
+        `s-commodity-online-payment`.`paymentNumber` as `paymentNumber`
+    FROM `s-commodity-online-order`
+        LEFT JOIN `s-commodity-online-payment`
+        WITHIN 1 HOUR --GRACE PERIOD 0 MILLISECOND --lo he comentado para que me muestre el WARNING
+        ON `s-commodity-online-order`.`onlineOrderNumber` = `s-commodity-online-payment`.`onlineOrderNumber`
+EMIT CHANGES;
+
+
+
+
+
+-- #################################### OUTER JOIN ############################################################
+CREATE STREAM `s-commodity-join-order-payment-three` 
+    AS SELECT
+        ROWKEY as `syntheticKey`,
+        `s-commodity-online-order`.`onlineOrderNumber` AS `onlineOrderNumber`,
+        PARSE_TIMESTAMP(`s-commodity-online-order`.`orderDateTime`, 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `orderDateTime`,
+        `s-commodity-online-order`.`totalAmount` AS `totalAmount`,
+        `s-commodity-online-order`.`username` as `username`,
+        PARSE_TIMESTAMP(`s-commodity-online-payment`.`paymentDateTime`, 'yyyy-MM-dd''T''HH:mm:ss.SSSZ') AS `paymentDateTime`,
+        `s-commodity-online-payment`.`paymentMethod` as `paymentMethod`,
+        `s-commodity-online-payment`.`paymentNumber` as `paymentNumber`
+    FROM `s-commodity-online-order`
+        FULL JOIN `s-commodity-online-payment`
+        WITHIN 1 HOUR  --directamente lo omito, saldrá WARNING
+        ON `s-commodity-online-order`.`onlineOrderNumber` = `s-commodity-online-payment`.`onlineOrderNumber`
+EMIT CHANGES;
+
+
+--                               Synthetic Key (para OUTER/FULL JOIN) 
+--  Supongamos que tenemos los siguientes streams con los valores proporcionados, y veremos
+--  como ksqlDB elige el correspondiente de forma automática:
+--  
+--  LEFT KEY        RIGHT KEY          SYNTHETIC KEY
+--      99              null                99
+--      null            88                  88
+--      77              77                  77
+--      null            null              No join          

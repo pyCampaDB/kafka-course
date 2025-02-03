@@ -2,7 +2,7 @@ package com.pycampadb.msvc.broker.stream.inventory.impl;
 
 import com.pycampadb.msvc.broker.message.InventoryMessage;
 import com.pycampadb.msvc.broker.stream.inventory.InventoryStream;
-import com.pycampadb.msvc.util.InventoryTimestampExtractor;
+import com.pycampadb.msvc.util.inventory.InventoryTimestampExtractor;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;

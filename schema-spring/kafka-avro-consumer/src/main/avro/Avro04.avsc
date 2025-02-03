@@ -1,0 +1,12 @@
+{
+	"type": "record",
+	"namespace": "com.pycampadb.avro.data",
+	"name": "Avro04",
+	"doc": "Sample enum",
+	"fields": [
+		{
+			"name": "allowedColor",
+			"type": "com.pycampadb.avro.data.Avro04Enum"
+		}
+	]
+}
